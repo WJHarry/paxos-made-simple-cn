@@ -1,0 +1,491 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+"http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" lang="zh-CN" xml:lang="zh-CN">
+<head>
+<!-- 2022-11-30 周三 00:08 -->
+<meta http-equiv="Content-Type" content="text/html;charset=utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Paxos Made Simple 中文翻译</title>
+<meta name="author" content="Leslie Lamport" />
+<meta name="generator" content="Org Mode" />
+<style>
+  #content { max-width: 60em; margin: auto; }
+  .title  { text-align: center;
+             margin-bottom: .2em; }
+  .subtitle { text-align: center;
+              font-size: medium;
+              font-weight: bold;
+              margin-top:0; }
+  .todo   { font-family: monospace; color: red; }
+  .done   { font-family: monospace; color: green; }
+  .priority { font-family: monospace; color: orange; }
+  .tag    { background-color: #eee; font-family: monospace;
+            padding: 2px; font-size: 80%; font-weight: normal; }
+  .timestamp { color: #bebebe; }
+  .timestamp-kwd { color: #5f9ea0; }
+  .org-right  { margin-left: auto; margin-right: 0px;  text-align: right; }
+  .org-left   { margin-left: 0px;  margin-right: auto; text-align: left; }
+  .org-center { margin-left: auto; margin-right: auto; text-align: center; }
+  .underline { text-decoration: underline; }
+  #postamble p, #preamble p { font-size: 90%; margin: .2em; }
+  p.verse { margin-left: 3%; }
+  pre {
+    border: 1px solid #e6e6e6;
+    border-radius: 3px;
+    background-color: #f2f2f2;
+    padding: 8pt;
+    font-family: monospace;
+    overflow: auto;
+    margin: 1.2em;
+  }
+  pre.src {
+    position: relative;
+    overflow: auto;
+  }
+  pre.src:before {
+    display: none;
+    position: absolute;
+    top: -8px;
+    right: 12px;
+    padding: 3px;
+    color: #555;
+    background-color: #f2f2f299;
+  }
+  pre.src:hover:before { display: inline; margin-top: 14px;}
+  /* Languages per Org manual */
+  pre.src-asymptote:before { content: 'Asymptote'; }
+  pre.src-awk:before { content: 'Awk'; }
+  pre.src-authinfo::before { content: 'Authinfo'; }
+  pre.src-C:before { content: 'C'; }
+  /* pre.src-C++ doesn't work in CSS */
+  pre.src-clojure:before { content: 'Clojure'; }
+  pre.src-css:before { content: 'CSS'; }
+  pre.src-D:before { content: 'D'; }
+  pre.src-ditaa:before { content: 'ditaa'; }
+  pre.src-dot:before { content: 'Graphviz'; }
+  pre.src-calc:before { content: 'Emacs Calc'; }
+  pre.src-emacs-lisp:before { content: 'Emacs Lisp'; }
+  pre.src-fortran:before { content: 'Fortran'; }
+  pre.src-gnuplot:before { content: 'gnuplot'; }
+  pre.src-haskell:before { content: 'Haskell'; }
+  pre.src-hledger:before { content: 'hledger'; }
+  pre.src-java:before { content: 'Java'; }
+  pre.src-js:before { content: 'Javascript'; }
+  pre.src-latex:before { content: 'LaTeX'; }
+  pre.src-ledger:before { content: 'Ledger'; }
+  pre.src-lisp:before { content: 'Lisp'; }
+  pre.src-lilypond:before { content: 'Lilypond'; }
+  pre.src-lua:before { content: 'Lua'; }
+  pre.src-matlab:before { content: 'MATLAB'; }
+  pre.src-mscgen:before { content: 'Mscgen'; }
+  pre.src-ocaml:before { content: 'Objective Caml'; }
+  pre.src-octave:before { content: 'Octave'; }
+  pre.src-org:before { content: 'Org mode'; }
+  pre.src-oz:before { content: 'OZ'; }
+  pre.src-plantuml:before { content: 'Plantuml'; }
+  pre.src-processing:before { content: 'Processing.js'; }
+  pre.src-python:before { content: 'Python'; }
+  pre.src-R:before { content: 'R'; }
+  pre.src-ruby:before { content: 'Ruby'; }
+  pre.src-sass:before { content: 'Sass'; }
+  pre.src-scheme:before { content: 'Scheme'; }
+  pre.src-screen:before { content: 'Gnu Screen'; }
+  pre.src-sed:before { content: 'Sed'; }
+  pre.src-sh:before { content: 'shell'; }
+  pre.src-sql:before { content: 'SQL'; }
+  pre.src-sqlite:before { content: 'SQLite'; }
+  /* additional languages in org.el's org-babel-load-languages alist */
+  pre.src-forth:before { content: 'Forth'; }
+  pre.src-io:before { content: 'IO'; }
+  pre.src-J:before { content: 'J'; }
+  pre.src-makefile:before { content: 'Makefile'; }
+  pre.src-maxima:before { content: 'Maxima'; }
+  pre.src-perl:before { content: 'Perl'; }
+  pre.src-picolisp:before { content: 'Pico Lisp'; }
+  pre.src-scala:before { content: 'Scala'; }
+  pre.src-shell:before { content: 'Shell Script'; }
+  pre.src-ebnf2ps:before { content: 'ebfn2ps'; }
+  /* additional language identifiers per "defun org-babel-execute"
+       in ob-*.el */
+  pre.src-cpp:before  { content: 'C++'; }
+  pre.src-abc:before  { content: 'ABC'; }
+  pre.src-coq:before  { content: 'Coq'; }
+  pre.src-groovy:before  { content: 'Groovy'; }
+  /* additional language identifiers from org-babel-shell-names in
+     ob-shell.el: ob-shell is the only babel language using a lambda to put
+     the execution function name together. */
+  pre.src-bash:before  { content: 'bash'; }
+  pre.src-csh:before  { content: 'csh'; }
+  pre.src-ash:before  { content: 'ash'; }
+  pre.src-dash:before  { content: 'dash'; }
+  pre.src-ksh:before  { content: 'ksh'; }
+  pre.src-mksh:before  { content: 'mksh'; }
+  pre.src-posh:before  { content: 'posh'; }
+  /* Additional Emacs modes also supported by the LaTeX listings package */
+  pre.src-ada:before { content: 'Ada'; }
+  pre.src-asm:before { content: 'Assembler'; }
+  pre.src-caml:before { content: 'Caml'; }
+  pre.src-delphi:before { content: 'Delphi'; }
+  pre.src-html:before { content: 'HTML'; }
+  pre.src-idl:before { content: 'IDL'; }
+  pre.src-mercury:before { content: 'Mercury'; }
+  pre.src-metapost:before { content: 'MetaPost'; }
+  pre.src-modula-2:before { content: 'Modula-2'; }
+  pre.src-pascal:before { content: 'Pascal'; }
+  pre.src-ps:before { content: 'PostScript'; }
+  pre.src-prolog:before { content: 'Prolog'; }
+  pre.src-simula:before { content: 'Simula'; }
+  pre.src-tcl:before { content: 'tcl'; }
+  pre.src-tex:before { content: 'TeX'; }
+  pre.src-plain-tex:before { content: 'Plain TeX'; }
+  pre.src-verilog:before { content: 'Verilog'; }
+  pre.src-vhdl:before { content: 'VHDL'; }
+  pre.src-xml:before { content: 'XML'; }
+  pre.src-nxml:before { content: 'XML'; }
+  /* add a generic configuration mode; LaTeX export needs an additional
+     (add-to-list 'org-latex-listings-langs '(conf " ")) in .emacs */
+  pre.src-conf:before { content: 'Configuration File'; }
+
+  table { border-collapse:collapse; }
+  caption.t-above { caption-side: top; }
+  caption.t-bottom { caption-side: bottom; }
+  td, th { vertical-align:top;  }
+  th.org-right  { text-align: center;  }
+  th.org-left   { text-align: center;   }
+  th.org-center { text-align: center; }
+  td.org-right  { text-align: right;  }
+  td.org-left   { text-align: left;   }
+  td.org-center { text-align: center; }
+  dt { font-weight: bold; }
+  .footpara { display: inline; }
+  .footdef  { margin-bottom: 1em; }
+  .figure { padding: 1em; }
+  .figure p { text-align: center; }
+  .equation-container {
+    display: table;
+    text-align: center;
+    width: 100%;
+  }
+  .equation {
+    vertical-align: middle;
+  }
+  .equation-label {
+    display: table-cell;
+    text-align: right;
+    vertical-align: middle;
+  }
+  .inlinetask {
+    padding: 10px;
+    border: 2px solid gray;
+    margin: 10px;
+    background: #ffffcc;
+  }
+  #org-div-home-and-up
+   { text-align: right; font-size: 70%; white-space: nowrap; }
+  textarea { overflow-x: auto; }
+  .linenr { font-size: smaller }
+  .code-highlighted { background-color: #ffff00; }
+  .org-info-js_info-navigation { border-style: none; }
+  #org-info-js_console-label
+    { font-size: 10px; font-weight: bold; white-space: nowrap; }
+  .org-info-js_search-highlight
+    { background-color: #ffff00; color: #000000; font-weight: bold; }
+  .org-svg { }
+</style>
+<style>#preamble {font-size:22px;line-height:1.6;font-family: Times New Roman,Liberation Sans,楷体!important;} #preamble p  {font-family: Times New Roman,Liberation Sans,楷体!important;} #content {font-size:20px;line-height:1.6;font-family:Times New Roman,Liberation Sans,宋体,思源宋体;} #content h1,h2,h3,h4 {font-family:Times New Roman,liberation,思源黑体;} .MathJax span {font-family: MathJax_Math,思源宋体!important;} #content p{text-indent:2em;margin-top:10px;margin-bottom:10px;} img{width:60%;}</style>
+<script type="text/x-mathjax-config">
+    MathJax.Hub.Config({
+        displayAlign: "center",
+        displayIndent: "0em",
+
+        "HTML-CSS": { scale: 100,
+                        linebreaks: { automatic: "false" },
+                        webFont: "TeX"
+                       },
+        SVG: {scale: 100,
+              linebreaks: { automatic: "false" },
+              font: "TeX"},
+        NativeMML: {scale: 100},
+        TeX: { equationNumbers: {autoNumber: "AMS"},
+               MultLineWidth: "85%",
+               TagSide: "right",
+               TagIndent: ".8em"
+             }
+});
+</script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.0/MathJax.js?config=TeX-AMS_HTML"></script>
+</head>
+<body>
+<div id="preamble" class="status">
+<h1 class="title">Paxos Made Simple 中文翻译</h1>
+          <p class="subtitle" style="font-family:楷体">2001-11-01 BY Leslie Lamport</p>
+</div>
+<div id="content" class="content">
+<div id="table-of-contents" role="doc-toc">
+<h2>&#30446;&#24405;</h2>
+<div id="text-table-of-contents" role="doc-toc">
+<ul>
+<li><a href="#org650fa92">摘要</a></li>
+<li><a href="#orgc8bcc61">1. 介绍</a></li>
+<li><a href="#org4311b1f">2. 一致性算法</a>
+<ul>
+<li><a href="#org4fe89b3">2.1 要解决的问题</a></li>
+<li><a href="#org2422826">2.2 提案选举</a></li>
+<li><a href="#org06446dd">2.3 获知被选中的提案</a></li>
+<li><a href="#org43586dd">2.4 可持续性</a></li>
+<li><a href="#org2716a3b">2.5 实现</a></li>
+</ul>
+</li>
+<li><a href="#org96145aa">3. 状态机的实现</a></li>
+<li><a href="#org88ebdca">引用</a></li>
+</ul>
+</div>
+</div>
+
+<div id="outline-container-org650fa92" class="outline-2">
+<h2 id="org650fa92">摘要</h2>
+<div class="outline-text-2" id="text-org650fa92">
+<p>
+如果用平白的语言表述，Paxos算法其实是非常简单的。<br />
+</p>
+</div>
+</div>
+
+<div id="outline-container-orgc8bcc61" class="outline-2">
+<h2 id="orgc8bcc61">1. 介绍</h2>
+<div class="outline-text-2" id="text-orgc8bcc61">
+<p>
+一直以来，为实现具备容错性的分布式系统而设计的Paxos算法都被认为是难以理解的，这可能是由于对Paxos算法的原始表述对大部分读者来说有些晦涩了。实际上，这几乎是最简单和显而易见的分布式算法了。它的核心是一个一致性算法——议会算法。本文的下一节会向你展示这个一致性算法几乎满足了我们对它的一切期待。本文的最后一节完整地解释了Paxos算法，该算法将一致性的共识直接应用于状态机，以实现分布式系统。这种方式应该为人们熟知，它是关于分布式系统的理论研究中最常被引用的论文主题。[4]<br />
+</p>
+</div>
+</div>
+
+<div id="outline-container-org4311b1f" class="outline-2">
+<h2 id="org4311b1f">2. 一致性算法</h2>
+<div class="outline-text-2" id="text-org4311b1f">
+</div>
+<div id="outline-container-org4fe89b3" class="outline-3">
+<h3 id="org4fe89b3">2.1 要解决的问题</h3>
+<div class="outline-text-3" id="text-org4fe89b3">
+<p>
+假设有一组进程可以发表提案<sup><a id="fnr.1" class="footref" href="#fn.1" role="doc-backlink">1</a></sup>，一致性算法确保这些提案内容中只有一个可以被选中。如果没有提案被提出，那也不应该有提案内容被选中。如果一个提案内容被选中，这组进程都应该获知这个被选中的提案内容。保证一致性算法的安全性，就是在保证以下三点：<br />
+</p>
+<ul class="org-ul">
+<li>只有被进程们提出的提案内容可以被选中；<br /></li>
+<li>只有一个提案内容可以被选中；<br /></li>
+<li>一个进程只有当一个提案内容确实被选中后，才会获知到这个提案内容被选中了。<br /></li>
+</ul>
+<p>
+我们不会尝试去指定一个确切的让算法继续的条件。然而，最终的目的是确保能选中一个被提出的提案内容；如果一个提案内容被选中，一个进程最终能获知这个提案内容。<br />
+</p>
+
+<p>
+我们让三类代理分别扮演一致性算法中的三种角色：提案者、接受者和学习者。在实现上，一个进程可以扮演多种角色，但我们此处并不关心代理和进程之间的映射关系。<br />
+</p>
+
+<p>
+假设代理之间可以通过发送消息进行交流，我们使用常用的异步非拜占庭模型<sup><a id="fnr.2" class="footref" href="#fn.2" role="doc-backlink">2</a></sup>，就是说：<br />
+</p>
+<ul class="org-ul">
+<li>代理以任意速度运行，有可能因失败而宕机，也可能会重启。因为所有的代理都可能在一个提案内容被选中后停止然后重启，所以唯一的解决方案就是代理可以在停机并重启时记住一些信息。<br /></li>
+<li>消息的投递可能耗费很长时间，可能重复，可能丢失，但不会损坏。<br /></li>
+</ul>
+</div>
+</div>
+
+<div id="outline-container-org2422826" class="outline-3">
+<h3 id="org2422826">2.2 提案选举</h3>
+<div class="outline-text-3" id="text-org2422826">
+<p>
+选举提案的最简单的方式，就是只有一个接受者。提案者们将提案内容发给接受者，接受者只要选中他收到的第一个提案内容就好了。尽快这种方式看起来很简单，但并不能令人满意，因为一旦这个唯一的接受者失败，接下来的一些工作都不能正常进行。<br />
+</p>
+
+<p>
+所以，我们尝试另一种选举提案的方式，使用多个接受者代理。一个提案者将提案内容发送给一组接受者，接受者会同意这个提案内容。当足够多的接受者同意了一个提案内容，这个提案内容就被选中了。这里的足够多是多少？为了确保只有一个提案被选中，我们认为这个足够多是指代理中的大多数。因为假如存在两个收获了大多数同意的提案内容，一定有至少一个接受者同时同意了两个提案内容，而我们限制一个接受者只能同意一个提案内容，就可以保证只有一个提案内容被选中。（我们从许多的论文中看到了对大多数的概括表述，似乎是始自[3]。）<br />
+</p>
+
+<p>
+在不考虑失败和消息丢失的前提下，即使只有一个提案者提出了一个提案内容，我们也希望这个提案内容被选中。这就表明了一个要求：<br />
+\[P1. 一个接受者必须同意他收到的第一个提案.\]<br />
+但这个要求导致了一个问题。几个提案内容可能同一时间被不同的提案者提出，导致可能会出现每个提案者都同意了一个提案内容，但所有提案内容都没有收获大多数接受者的投票。甚至当只有两个提案内容时，如果每个提案内容都被半数的接受者同意，此时只要一个接受者失败，都会导致没有提案内容被最终选中。<br />
+</p>
+
+<p>
+\(P1\) 和一个提案内容只有被大多数接受者同意时才能被选中的要求，意味着必须允许一个接受者同意超过一个提案。我们为了跟踪一个接受者可能接受的不同的提案，为每个提案赋予一个自然数的编号，也就是说，每个提案由提案编号和提案内容组成。为了消除歧义，我们要求不同的提案的编号必须不同。我们先不考虑具体的实现方式，现在我们假设我们可以获取编号。当一个提案被大多数的接受者同意时，这个提案的值就被选中了，这时我们表述为这个提案被选中了。<br />
+</p>
+
+<p>
+我们可以允许多个提案被选中，但我们必须保证所有被选中的提案都具有相同的提案内容。结合提案编号，我们只要保证：<br />
+\[P2. 如果一个内容为v的提案被选中了，那所有拥有更高编号且被选中的提案的内容都是v.\]<br />
+因为编号是全局有序的，\(P2\) 保证了只有一个提案内容可以被选中这个关键安全属性。<br />
+</p>
+
+<p>
+为了被选中，一个提案必须被至少一个接受者同意。所以，我们为了满足\(P2\)，需要满足：<br />
+\[P2^a. 如果一个内容为v的提案被选中了，那所有拥有更高编号且被任意接受者同意的提案的内容都是v.\]<br />
+我们依然遵循 \(P1\) 来确保一些提案被选中。由于交流是异步的，一个提案可能被选中时，一些接受者，例如 \(c\) 还从未收到这个提案。假设此时一个新的提案者提出了一个更高编号的，具有不同的内容的提案。\(P1\) 要求 \(c\) 同意这个提案，但这样就违背了 \(P2^a\)。为了维持 \(P1\) 和 \(P2^a\)，我们需要对 \(P2^a\) 进行强化：<br />
+\[P2^b. 如果一个内容为v的提案被选中了，那所有拥有更高编号且被任意提案者提出的提案的内容都是v.\]<br />
+因为一个提案在被接受者接受之前，都是被提案者提出的，因此 \(P2^b\) 可以推导出 \(P2^a\)，继而推导出\(P2\)。<br />
+</p>
+
+<p>
+为了研究如何满足 \(P2^b\)，我们来思考下如何证明它成立。假设编号为 \(m\)，内容为 \(v\) 的提案被选中，我们来证明任意提案，只要拥有编号 \(n>m\)，就拥有内容 \(v\)。我们使用数学归纳法来进行简单证明：对于编号为 \(m..(n-1)\) 的每一个提案，都有值为 \(v\)，此处 \(i..j\) 指从 \(i\) 到 \(j\) 的一组数字，我们可以推出编号为 \(n\) 的提案也有值为 \(v\) 。对于被选中的编号为 \(m\) 的提案，一定存在一个包含了大多数接受者的集合 \(C\) ，使得 \(C\) 中的每一个接受者都同意这个提案。将此与归纳的假设相结合，\(m\) 被选中意味着：<br />
+\[C中的每一个接受者都同意了编号为m..(n − 1)的提案，每一个编号为m..(n − 1)且被接受的提案的值都为v.\]<br />
+由于任意包含大多数接受者的集合 \(S\) ，一定至少包含集合 \(C\) 中的一个成员，我们可以通过确保下面条件，来确定编号为 \(n\) 的提案具有值 \(v\) ：<br />
+</p>
+
+<p>
+\[P2^c. & 对于任意v和n，如果一个值为v，且编号为n的提案被提出，则一定存在包含大多数接受者的集合S，使得\]<br />
+\[(a) & S中没有接受者同意了编号小于n的任何提案，或\]<br />
+\[(b) & v是S中所有接受者同意的编号小于n的提案中，编号最高的提案的值.\]<br />
+我们可以通过确保 \(P2^c\) 始终成立来保证 \(P2^b\)。<br />
+</p>
+
+<p>
+为了保证 \(P2^c\) 始终成立，一个提案者想要提出编号为 \(n\) 的提案，一定要知道编号小于 \(n\) 的，且已经或将要被大多数接受者同意的最高编号的提案的内容(b)。要获知已经被同意的提案是简单的，但预测未来要被同意的提案就难了。与其尝试预测未来，不如让这种情况不会发生。也就是说，提案者要求接受者不会再同意编号小于 \(n\) 的任何提案(a)。这样一来，提出提案就要遵循如下算法：<br />
+</p>
+<blockquote>
+<ol class="org-ol">
+<li>提案者生成一个新的提案编号 \(n\) ，向一组接受者中的每一个成员发送请求，要求接受者响应：<br />
+a) 承诺不再同意一个编号小于 \(n\) 的提案，且<br />
+b) 同意过的编号小于 \(n\) 的提案中，编号最高的提案（如果存在）.<br />
+下文中将此类请求称为编号 \(n\) 的 <i>前置</i> 请求<br /></li>
+<li>如果提案者收到大多数接受者的响应，它就可以提出编号为 \(n\) ，内容为 \(v\) 的提案了， 其中 \(v\) 是响应(b)中编号最高的提案的内容。如果响应中没有返回任何提案，那就由提案者选取一个提案内容。<br /></li>
+</ol>
+</blockquote>
+<p>
+提案者通过向与 <i>前置</i> 请求不同的一组接受者发送请求来提出提案。我们称这类请求为 <i>接受</i> 请求。<br />
+</p>
+
+<p>
+这里描述了提案者的算法流程，那接受者呢？接受者可以接收 <i>前置</i> 请求和 <i>接受</i> 请求。接受者可以忽略任何请求，而不会影响安全性。所以我们需要给出何时允许对请求做出响应。对于 <i>前置</i> 请求永远都可以响应，而如果没有承诺过不响应，就可以对 <i>接受</i> 请求做出响应以对提案做出表决。也就是说：<br />
+\[P1^a. 接受者可以接受编号为n的提案，除非它曾经响应过编号大于n的接受请求.\]<br />
+可以看出 \(P1^a\) 包含了 \(P1\) 。<br />
+</p>
+
+<p>
+我们现在有了一个完整的选举提案的算法，在提案编号唯一的前提下满足了一些必需的安全属性。最终的算法还需要进行一个小优化。<br />
+</p>
+
+<p>
+假设接受者接受到一个编号为 \(n\) 的 <i>前置</i> 请求，但他已经响应了一个编号大于 \(n\) 的 <i>前置</i> 请求，也就承诺了不会同意任何编号为 \(n\) 的提案。这样一来，这个接受者就没有理由同意这个提案者提出的任何编号为 \(n\) 的新提案了。所以我们要让这个接受者忽略这样的 <i>前置</i> 请求。我们也让它忽略它已经同意了的提案所对应的 <i>前置</i> 请求。<br />
+</p>
+
+<p>
+在这样的优化下，接受者只需要记住它曾经同意过的最高编号的提案，以及它曾经响应过的编号最高的 <i>前置</i> 请求的编号。由于无论是否出现故障， \(P2^c\) 始终要确保成立，接受者一定要在它故障并重启时记住这些相关信息。需要注意的是，提案者只要能保证编号生成的不重复，那它就可以忽略一个提案和关于它的一切。<br />
+</p>
+
+<p>
+将提案者和接受者的行为放在一起，我们可以看到算法在如下两个阶段运行：<br />
+</p>
+<dl class="org-dl">
+<dt>阶段1.</dt><dd>a) 提案者选择提案编号 \(n\) ，发送 <i>前置</i> 请求给一组占大多数的接受者。<br />
+b) 如果接受者接收到编号为 \(n\) 的 <i>前置</i> 请求，且 \(n\) 大于它之前响应的任何 <i>前置</i> 请求的编号，那它要在响应中承诺不会同意任何编号小于 \(n\) 的提案，并携带它同意过的编号最高的提案。<br /></dd>
+<dt>阶段2.</dt><dd>a) 如果提案者收到 <i>前置</i> 请求的响应，发送 <i>接受</i> 请求给那些接受者，其中提案的编号为 \(n\) ，内容为 \(v\) ，\(v\) 是所有接受者响应的提案中，编号最高的提案的内容。如果接受者们都没有响应提案，则是一个随意的值。<br />
+b) 接受者收到编号为 \(n\) 的 <i>接受</i> 请求，如果之前没有响应过比 \(n\) 更大的编号的 <i>前置</i> 请求，则同意提案。<br /></dd>
+</dl>
+<p>
+一个提案者可以提出多个提案，对每个提案都要遵循这套算法。提案者可以在过程中随时放弃提案。（即使在提案被放弃了很久之后，仍然到达了目的地，正确性依然要得到保证。）如果有其它提案者已经开始发起更高编号的提案了，也许是时候放弃了。所以如果接受者因为收到了更高编号的 <i>前置</i> 请求而忽略了一个 <i>前置</i> 或 <i>接受</i> 请求，也许它应该通知给被忽略的提案者，这样提案者就可以放弃它的提案。这个性能上的优化不会影响正确性。<br />
+</p>
+</div>
+</div>
+
+<div id="outline-container-org06446dd" class="outline-3">
+<h3 id="org06446dd">2.3 获知被选中的提案</h3>
+<div class="outline-text-3" id="text-org06446dd">
+<p>
+为了获知一个提案的内容被选中了，学习者必须意识到提案已经被大多数接受者同意了。很容易想到的算法是每个接受者只要同意了一个提案，就响应所有的学习者，将提案发送给他们。这样能让学习者尽可能快地发现被选中的值，但这样需要每个接受者响应每一个学习者，响应的数量等于接受者和学习者二者数量的乘积。<br />
+</p>
+
+<p>
+基于非拜占庭错误的假设，使一个学习者很容易从另一个学习者那里获知提案被同意。我们可以让接受者将对提案的接受响应给一个特定的学习者，这个学习者在提案的内容被选中时，会反过来通知给其它学习者。这种方式需要额外的一轮时间让所有学习者发现被选中的值。这种方式也是不可靠的，因为这个特定的学习者可能会故障。但这种方式需要的响应数量仅仅是接受者和学习者二者的和。<br />
+</p>
+
+<p>
+更通用地，接受者可以将对提案的同意响应给一些特定的学习者，他们中的每一个都能在提案内容被选中时告知所有其它的学习者。使用更多的特定学习者，可以在更复杂的沟通中提供更高的可靠性。<br />
+</p>
+
+<p>
+由于消息存在丢失的情况，提案的内容可能在没有被任何学习者获知的情况下被选中。学习者可以询问接受者他们同意了哪些提案，但接受者的故障会让我们无法知道是否多数接受者同意了某个提案。在这种情况下，只有当一个新的提案被选中时，学习者们才会知道什么提案内容被选中了。如果学习者想知道一个提案内容是否被选中，它可以利用上述算法，让提案者发起提案。<br />
+</p>
+</div>
+</div>
+
+<div id="outline-container-org43586dd" class="outline-3">
+<h3 id="org43586dd">2.4 可持续性</h3>
+<div class="outline-text-3" id="text-org43586dd">
+<p>
+我们很容易想到一个场景，两个提案者不断增加编号提出了一串提案，但都无法被选中。提案者 \(p\) 完成了提案 \(n_1\) 的阶段1。另一个提案者 \(q\) 在之后完成了提案 \(n_2\) （\(n_2 > n_1\)）。提案者 \(p\) 的阶段2的对提案 \(n^1\) 的 <i>接受</i> 请求被忽略了，因为接受者们都承诺了不会再接受编号小于 \(n_2\) 的提案。所以，提案 \(p\) 又对新的编号为 \(n_3\) （\(n_3 > n_2\)）的提案开始并完成了阶段1，导致提案者 \(q\) 的阶段2的的 <i>接受</i> 请求又被忽略了，依此类推。<br />
+</p>
+
+<p>
+为了保证可持续性，必须要选举一个特定的提案者作为唯一一个提出提案的人。如果这个特定的选举者可以成功和大多数接受者联系，且如果它使用的提案编号大于已经存在的所有编号，那么提案会被成功接受。通过在获知到已经更高编号的请求时放弃提案并重试，这个特定的提案者终将能选到一个足够高的提案编号。<br />
+</p>
+
+<p>
+如果正常工作的系统（提案者、接受者、通信网络）足够多，选举一个指定的提案者可以实现活跃度。Fischer、Lynch 和 Patterson [1] 的著名结果指出了提案者的可靠算法必须使用随机性或实时性——例如，通过使用超时机制。然而，无论选举成功还是失败，安全性都得到了保证。<br />
+</p>
+</div>
+</div>
+
+<div id="outline-container-org2716a3b" class="outline-3">
+<h3 id="org2716a3b">2.5 实现</h3>
+<div class="outline-text-3" id="text-org2716a3b">
+<p>
+Paxos算法[5]假定了一个进程网络。在算法中,每个进程分别扮演了提案者、接受者和学习者三种角色。算法选择出一个领导人,扮演杰出者和学习者代表(即上文中“特定的”提案者和学习者)。Paxos共识算法恰如上述所说,请求和响应都作为普通的消息发送。响应的消息上标记了提案编号以避免混淆。在故障发生时,会使用稳定的存储以保存接受者必须记住的上下文信息。接受者会在响应真实发出之前,将预期的响应内容存储下来。<br />
+</p>
+</div>
+</div>
+</div>
+
+<div id="outline-container-org96145aa" class="outline-2">
+<h2 id="org96145aa">3. 状态机的实现</h2>
+<div class="outline-text-2" id="text-org96145aa">
+<p>
+实现一个分布式系统的最简单的方式是让客户端们将指令提交到中心服务器。这个服务器就可以表述为一个以一定顺序执行客户端指令的确定性状态机。这个状态机具有当前的状态；它每执行一个步骤，都会接收一个指令作为输入，产生一个输出，并变为一个新的状态。比如一个分布式的银行系统，客户端就是出纳员们，状态机的状态是所有用户的账户余额。当且仅当余额大于提取的金额时，可以执行状态机指令以减少账户余额，产生旧的和新的余额作为输出。<br />
+</p>
+
+<p>
+这种使用单独的服务器的实现当这个服务器故障时，整个系统都会故障。因此我们使用一组服务器，每一个都独立地实现状态机。由于状态机是确定性的，这意味着所有的服务器在接受了相同的指令后会做成相同的输出，并处于相同的状态。所以发出指令的客户端可以使用任何一个服务器的输出作为结果。<br />
+</p>
+
+<p>
+为了保证所有服务器收到的状态机指令是相同顺序的，我们将Paxos算法中每个独立实例排序，第 \(i\) 个实例选中的值是状态机指令序列中的第 \(i\) 个。每个服务器扮演算法中的所有角色（提案者、接受者和学习者）。现在，我假设服务器的集合是固定不变的，所以算法中的所有实例都能使用相同的一批代理。<br />
+</p>
+
+<p>
+在正常的操作中，唯一的一个服务器被指定为领导人，作为“特定的”提案者（唯一一个尝试发布提案的人）。客户端们向领导者发送指令，由领导者指定指令们的顺序。如果领导者决定一个指令是第135个指令，它会试图让算法中的第135个实例选中这个指令作为值。这通常会成功。但可能会由于故障而失败，或由于另一个服务器也认为它自己是领导者，并且对哪个指令是第135个由不同的想法。但一致性算法会确保，最多只有一个指令会被选为第135个。<br />
+</p>
+</div>
+</div>
+
+<div id="outline-container-org88ebdca" class="outline-2">
+<h2 id="org88ebdca">引用</h2>
+<div class="outline-text-2" id="text-org88ebdca">
+<dl class="org-dl">
+<dt>[1]</dt><dd>Michael J. Fischer, Nancy Lynch, and Michael S. Paterson. Impossibility of distributed consensus with one faulty process. Journal of the ACM, 32(2):374–382, April 1985.<br /></dd>
+<dt>[2]</dt><dd>Idit Keidar and Sergio Rajsbaum. On the cost of fault-tolerant consensus when there are no faults—a tutorial. TechnicalReport MIT-LCS-TR-821, Laboratory for Computer Science, Massachusetts Institute Technology, Cambridge, MA, 02139, May 2001. also published in SIGACT News 32(2) (June 2001).<br /></dd>
+<dt>[3]</dt><dd>Leslie Lamport. The implementation of reliable distributed multiprocess systems. Computer Networks, 2:95–114, 1978.<br /></dd>
+<dt>[4]</dt><dd>Leslie Lamport. Time, clocks, and the ordering of events in a distributed system. Communications of the ACM, 21(7):558–565, July 1978.<br /></dd>
+<dt>[5]</dt><dd>Leslie Lamport. The part-time parliament. ACM Transactions on Computer Systems, 16(2):133–169, May 1998.<br /></dd>
+</dl>
+</div>
+</div>
+<div id="footnotes">
+<h2 class="footnotes">&#33050;&#27880;: </h2>
+<div id="text-footnotes">
+
+<div class="footdef"><sup><a id="fn.1" class="footnum" href="#fnr.1" role="doc-backlink">1</a></sup> <div class="footpara" role="doc-footnote"><p class="footpara">
+此处发表提案可以理解为提出一次数据或状态的更新。<br />
+</p></div></div>
+
+<div class="footdef"><sup><a id="fn.2" class="footnum" href="#fnr.2" role="doc-backlink">2</a></sup> <div class="footpara" role="doc-footnote"><p class="footpara">
+非拜占庭模型：拜占庭问题是指，在一个具有n个节点的集群中，如果其中t个节点可能会发生任意的错误，使消息传递发生损坏，且n&lt;=3t，则不可能保证集群的一致性。此处非拜占庭模型指的是，假设模型中不存在这种发出损坏的错误消息的节点（拜占庭节点），也就是下面的假设2。<br />
+</p></div></div>
+
+
+</div>
+</div></div>
+</body>
+</html>
